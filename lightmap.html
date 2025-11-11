@@ -115,7 +115,7 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
 
 
 // ---1.1) 把台大框起來
-fetch('http://localhost/light_map/data/ntu_area.geojson')
+fetch('/ntu_light_map/data/ntu_area.geojson')
   .then(r => r.json())
   .then(geo => {
     const ntuLine = L.geoJSON(geo, {
@@ -127,7 +127,7 @@ fetch('http://localhost/light_map/data/ntu_area.geojson')
 
 
 // 讀 hex-grid（僅針對一條路的六邊形資料）
-fetch('/light_map/data/boatroad_filled.geojson')
+fetch('/ntu_light_map/data/boatroad_filled.geojson')
   .then(r => r.json())
   .then(hexgeo => {
     // 1) 收集 brightness_filled 數值並做清理
