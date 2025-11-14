@@ -127,7 +127,7 @@ fetch('/ntu_light_map/data/ntu_area.geojson')
 
 
 // 讀 hex-grid（僅針對一條路的六邊形資料）
-fetch('/ntu_light_map/data/boatroad_filled.geojson')
+fetch('/ntu_light_map/data/merge.geojson')
   .then(r => r.json())
   .then(hexgeo => {
     // 1) 收集 brightness_filled 數值並做清理
