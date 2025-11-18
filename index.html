@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>校園生態友善照明決策地圖 — Demo</title>
+  <title>台大夜間亮度地圖 — Demo</title>
+
   <!-- Leaflet CDN -->
   <link
     rel="stylesheet"
@@ -16,398 +17,277 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""
   ></script>
+
   <style>
-    html, body { height: 100%; margin: 0; }
-    #app { display: grid; grid-template-columns: 320px 1fr; height: 100%; }
-    #sidebar {
-      padding: 14px; border-right: 1px solid #e5e7eb; overflow: auto;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    html, body {
+      height: 100%;
+      margin: 0;
     }
-    #map { height: 100%; }
-    h1 { font-size: 18px; margin: 0 0 8px; }
-    h2 { font-size: 14px; margin: 18px 0 8px; color:#334155 }
-    .card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:12px; margin-bottom:12px; box-shadow: 0 2px 8px rgba(0,0,0,.04); }
-    .row { display:flex; align-items:center; gap:8px; margin:8px 0; }
-    .pill { display:inline-block; padding:2px 8px; border-radius:999px; border:1px solid #e5e7eb; font-size:12px; }
-    .muted { color:#64748b; font-size:12px }
-    .legend { display:flex; gap:8px; align-items:center; margin-top:8px; }
-    .swatch { width:14px; height:14px; border-radius:3px; border:1px solid #00000022; }
-    button.primary { background:#111827; color:white; border:none; padding:8px 10px; border-radius:10px; cursor:pointer; }
-    button.ghost { background:white; color:#111827; border:1px solid #e5e7eb; padding:8px 10px; border-radius:10px; cursor:pointer; }
-    .footer { font-size:12px; color:#64748b; }
+    #map {
+      height: 100vh;
+      width: 100vw;
+    }
+    .map-title {
+      padding: 8px 12px;
+      background: rgba(15, 23, 42, 0.9);
+      color: #f9fafb;
+      border-radius: 8px;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    }
+    .legend-box {
+      padding: 8px 10px;
+      background: rgba(15, 23, 42, 0.9);
+      color: #f9fafb;
+      border-radius: 8px;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      font-size: 12px;
+      line-height: 1.3;
+      box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    }
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 3px 0;
+    }
+    .legend-color {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      border: 1px solid #0004;
+      flex-shrink: 0;
+    }
+    .leaflet-control-layers-expanded {
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      font-size: 12px;
+    }
   </style>
 </head>
 <body>
-<div id="app">
-  <aside id="sidebar">
-    <h1>校園生態友善照明 — Demo</h1>
-    <div class="muted">最小可行版本（單檔 HTML）。用滑桿/選單試試看情境模擬。</div>
-
-    <div class="card">
-      <h2>情境設定</h2>
-      <div class="row">
-        <label for="minLux">步道最低照度 (lx)</label>
-        <input id="minLux" type="range" min="1" max="15" step="1" value="5" />
-        <span id="minLuxVal" class="pill">5</span>
-      </div>
-      <div class="row">
-        <label for="cct">燈色 (CCT)</label>
-        <select id="cct">
-          <option value="2700">2700K（暖白，推薦）</option>
-          <option value="3000" selected>3000K（暖白）</option>
-          <option value="4000">4000K（中性白）</option>
-        </select>
-      </div>
-      <div class="row">
-        <input id="fullCutoff" type="checkbox" checked />
-        <label for="fullCutoff">全遮光（無向上光）</label>
-      </div>
-      <div class="row" style="justify-content:space-between;">
-        <button id="resetBtn" class="ghost">重設</button>
-        <button id="exportBtn" class="primary">下載目前設定</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>即時結果</h2>
-      <div class="row"><span class="muted">達標路段：</span><strong id="okCount">—</strong></div>
-      <div class="row"><span class="muted">不達標路段：</span><strong id="badCount">—</strong></div>
-      <div class="row"><span class="muted">估計一次性費用：</span><strong id="capex">—</strong><span class="muted">（元）</span></div>
-      <div class="row"><span class="muted">估計年耗能：</span><strong id="opex">—</strong><span class="muted">（kWh）</span></div>
-      <div class="legend">
-        <div class="swatch" style="background:#10b981"></div><span class="muted">達標</span>
-        <div class="swatch" style="background:#ef4444"></div><span class="muted">不達標</span>
-        <div class="swatch" style="background:#f59e0b"></div><span class="muted">生態敏感</span>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>知識卡（精簡）</h2>
-      <div class="row">
-        <span class="pill">lx</span>
-        <div class="muted">照度（落在地面/人身上的光），步道多以 5 lx 參考。</div>
-      </div>
-      <div class="row">
-        <span class="pill">nit</span>
-        <div class="muted">亮度（cd/m²），駕駛視角常用；與 lx 之間需假設表面反射率。</div>
-      </div>
-      <div class="row">
-        <span class="pill">生態</span>
-        <div class="muted">低CCT（≤3000K）、全遮光、必要時段調光/感測觸發。</div>
-      </div>
-    </div>
-
-    <div class="footer">資料為示意假資料。你可以把 CSV/GeoJSON 換成自己的量測。
-    </div>
-  </aside>
-  <div id="map"></div>
-</div>
+<div id="map"></div>
 
 <script>
-// --- 1) 初始化地圖（台大周邊座標，大約） ---
-const map = L.map('map').setView([25.0173,121.5398],16);
+// ========== 1) 初始化地圖 ==========
+const map = L.map('map').setView([25.0173, 121.5398], 16);
 
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-  attribution: '&copy; OSM contributors &copy; CARTO',
-  subdomains: 'abcd',
-  maxZoom: 20
-}).addTo(map);
+// 底圖
+const baseTile = L.tileLayer(
+  'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  {
+    attribution: '&copy; OSM contributors &copy; CARTO',
+    subdomains: 'abcd',
+    maxZoom: 20
+  }
+).addTo(map);
 
+// 圖層控制（先建好，之後慢慢 addOverlay）
+const layersControl = L.control.layers(
+  { '深色底圖': baseTile },
+  {},
+  { collapsed: false }
+).addTo(map);
 
-// ---1.1) 把台大框起來
+// ========== 2) 左上角標題「台大夜間亮度地圖」 ==========
+const titleControl = L.control({ position: 'topleft' });
+titleControl.onAdd = function () {
+  const div = L.DomUtil.create('div', 'map-title');
+  div.innerHTML = '台大夜間亮度地圖';
+  return div;
+};
+titleControl.addTo(map);
+
+// ========== 3) 固定顯示的圖層：ntu_area + hex_empty ==========
+
+// 3.1 台大範圍線
 fetch('/ntu_light_map/data/ntu_area.geojson')
   .then(r => r.json())
   .then(geo => {
     const ntuLine = L.geoJSON(geo, {
-      style: { color:'#ffffff', weight:1 }
+      style: { color: '#ffffff', weight: 1 }
     }).addTo(map);
 
+    // 初始視野
     map.fitBounds(ntuLine.getBounds());
   });
 
-
-// 讀 hex-grid（僅針對一條路的六邊形資料）
-fetch('/ntu_light_map/data/merge.geojson')
+// 3.2 空六邊形網格（白框、透明填色）
+fetch('/ntu_light_map/data/hex_empty_4326.geojson')
   .then(r => r.json())
-  .then(hexgeo => {
-    // 1) 收集 brightness_filled 數值並做清理
-    const vals = hexgeo.features
-      .map(f => Number(f.properties?.brightness_filled))
-      .filter(v => Number.isFinite(v));
+  .then(geo => {
+    L.geoJSON(geo, {
+      style: {
+        color: '#ffffff',
+        weight: 0.5,
+        fillOpacity: 0,
+        fill: false
+      }
+    }).addTo(map);
+  });
 
-    if (vals.length === 0) {
-      console.warn('brightness_filled 沒有數值可用');
+// ========== 4) 實測亮度六邊形：merge_sur_zhoushan ==========
+let brightnessLegend;
+
+fetch('/ntu_light_map/data/merge_sur_zhoushan.geojson')
+  .then(r => r.json())
+  .then(geo => {
+    // 4.1 取出亮度數值
+    const rawVals = geo.features
+      .map(f => Number(f.properties?.brightness_filled))
+      .filter(v => Number.isFinite(v) && v >= 0);
+
+    if (rawVals.length === 0) {
+      console.warn('merge_sur_zhoushan: brightness_filled 無有效數值');
       return;
     }
 
-    // 2) 計算五分位數門檻：20/40/60/80%
-    const sorted = [...vals].sort((a,b)=>a-b);
-    const q = p => {
-      const pos = (sorted.length - 1) * p;
+    // 固定第一級：0–1
+    const aboveOne = rawVals.filter(v => v > 1);
+    aboveOne.sort((a, b) => a - b);
+
+    // 簡單 quantile 函式
+    function quantile(sortedArr, p) {
+      if (sortedArr.length === 0) return 1;
+      const pos = (sortedArr.length - 1) * p;
       const base = Math.floor(pos);
       const rest = pos - base;
-      return rest === 0 ? sorted[base] : sorted[base] + rest * (sorted[base+1] - sorted[base]);
-    };
-    const breaks = [q(0.2), q(0.4), q(0.6), q(0.8)];
+      if (base + 1 < sortedArr.length) {
+        return sortedArr[base] + rest * (sortedArr[base + 1] - sortedArr[base]);
+      } else {
+        return sortedArr[base];
+      }
+    }
 
-    // 3) 顏色階（低→高）；可自行換成你的品牌色
-    const ramp = ['#f7fbff','#cfe7f6','#9ecae1','#6baed6','#3182bd','#08519c'];
-    const getColor = v => {
-      if (v == null || !Number.isFinite(v)) return '#cccccc';
-      return v > breaks[3] ? ramp[5] :
-             v > breaks[2] ? ramp[4] :
-             v > breaks[1] ? ramp[3] :
-             v > breaks[0] ? ramp[2] :
-                             ramp[1];
-    };
+    // 剩下的 range（>1）切四等分 → 共 5 級
+    const q25 = quantile(aboveOne, 0.25);
+    const q50 = quantile(aboveOne, 0.50);
+    const q75 = quantile(aboveOne, 0.75);
+    const q100 = quantile(aboveOne, 1.00);
 
-    // 4) 樣式與互動
-    const style = f => ({
-      color: '#10131a',      // 邊框色
-      weight: 0.5,           // 邊框寬
-      fillColor: getColor(Number(f.properties?.brightness_filled)),
-      fillOpacity: 0.85
-    });
+    // 莫蘭迪深藍到亮黃（低→高）
+    const ramp = [
+      '#222c40', // 0–1
+      '#3c4a63', // 1–q25
+      '#6a7485', // q25–q50
+      '#b4aa86', // q50–q75
+      '#f4de84'  // q75–max
+    ];
 
-    const highlight = e => {
-      const layer = e.target;
-      layer.setStyle({ weight: 1.5, color: '#ffffff', fillOpacity: 0.95 });
-      layer.bringToFront();
-      info.update(layer.feature.properties);
-    };
+    function getColor(v) {
+      if (!Number.isFinite(v)) return '#999999';
+      if (v <= 1) return ramp[0];
+      if (v <= q25) return ramp[1];
+      if (v <= q50) return ramp[2];
+      if (v <= q75) return ramp[3];
+      return ramp[4];
+    }
 
-    const resetHighlight = e => {
-      hexLayer.resetStyle(e.target);
-      info.update(); // 清空資訊框
-    };
-
-    const onEach = (feature, layer) => {
-      const v = Number(feature.properties?.brightness_filled);
-      layer.bindPopup(`
-        <div style="font: 12px/1.4 system-ui, sans-serif">
-          <b>Hex ID</b>: ${feature.properties?.id ?? '(n/a)'}<br/>
-          <b>brightness_filled</b>: ${Number.isFinite(v) ? v.toFixed(2) : 'NA'}
-        </div>
-      `);
-      layer.on({ mouseover: highlight, mouseout: resetHighlight });
+    const style = f => {
+      const v = Number(f.properties?.brightness_filled);
+      return {
+        color: '#0f172a',
+        weight: 0.3,
+        fillColor: getColor(v),
+        fillOpacity: 0.9
+      };
     };
 
-    // 5) 繪製圖層
-    const hexLayer = L.geoJSON(hexgeo, { style, onEachFeature: onEach }).addTo(map);
-
-    // 6) 視野調整到該條路的六邊形範圍
-    map.fitBounds(hexLayer.getBounds());
-
-    // 7) 右下角圖例（顯示分級與顏色）
-    const legend = L.control({ position: 'bottomright' });
-    legend.onAdd = function() {
-      const div = L.DomUtil.create('div', 'info legend');
-      div.style.padding = '8px 10px';
-      div.style.background = 'rgba(18,22,33,.85)';
-      div.style.color = '#fff';
-      div.style.borderRadius = '8px';
-      div.style.font = '12px/1.2 system-ui, sans-serif';
-
-      const labels = [];
-      const fmt = x => (Math.abs(x) >= 1000 ? x.toFixed(0) : x.toFixed(2));
-
-      const ranges = [
-        [-Infinity, breaks[0]],
-        [breaks[0], breaks[1]],
-        [breaks[1], breaks[2]],
-        [breaks[2], breaks[3]],
-        [breaks[3],  Infinity]
-      ];
-
-      ranges.forEach((rng, i) => {
-        const sample = (rng[0] === -Infinity ? breaks[0]-1 : rng[0] + 1e-9); // 取色用
-        const color = getColor(sample);
-        const from = rng[0] === -Infinity ? 'min' : fmt(rng[0]);
-        const to   = rng[1] ===  Infinity ? 'max' : fmt(rng[1]);
-        labels.push(`
-          <div style="display:flex;align-items:center;gap:6px;margin:3px 0">
-            <span style="width:14px;height:14px;background:${color};display:inline-block;border:1px solid #0004"></span>
-            <span>${from} – ${to}</span>
+    const measuredLayer = L.geoJSON(geo, {
+      style,
+      onEachFeature: (feature, layer) => {
+        const v = Number(feature.properties?.brightness_filled);
+        const luxStr = Number.isFinite(v) ? v.toFixed(2) : 'NA';
+        const id = feature.properties?.id ?? '(無 ID)';
+        layer.bindPopup(`
+          <div style="font: 12px/1.4 system-ui, sans-serif">
+            <b>Hex ID</b>：${id}<br/>
+            <b>亮度（lux）</b>：${luxStr}
           </div>
         `);
+      }
+    }).addTo(map);
+
+    // 加到圖層控制，可以勾選
+    layersControl.addOverlay(measuredLayer, '實測亮度六邊形');
+
+    // 4.2 建立圖例（右下角）
+    if (brightnessLegend) brightnessLegend.remove();
+
+    brightnessLegend = L.control({ position: 'bottomright' });
+    brightnessLegend.onAdd = function () {
+      const div = L.DomUtil.create('div', 'legend-box');
+
+      function fmt(x) {
+        if (!Number.isFinite(x)) return 'NA';
+        if (Math.abs(x) >= 1000) return x.toFixed(0);
+        return x.toFixed(2);
+      }
+
+      const rows = [];
+
+      // 0–1
+      rows.push({
+        color: ramp[0],
+        label: `0 – 1`
       });
 
-      div.innerHTML = `<div style="margin-bottom:6px;font-weight:600">brightness_filled</div>${labels.join('')}`;
+      // 1–q25
+      rows.push({
+        color: ramp[1],
+        label: `1 – ${fmt(q25)}`
+      });
+
+      // q25–q50
+      rows.push({
+        color: ramp[2],
+        label: `${fmt(q25)} – ${fmt(q50)}`
+      });
+
+      // q50–q75
+      rows.push({
+        color: ramp[3],
+        label: `${fmt(q50)} – ${fmt(q75)}`
+      });
+
+      // q75–max
+      rows.push({
+        color: ramp[4],
+        label: `${fmt(q75)} – ${fmt(q100)}`
+      });
+
+      let html = '<div style="margin-bottom:4px;font-weight:600;">亮度（lux）</div>';
+      rows.forEach(row => {
+        html += `
+          <div class="legend-row">
+            <span class="legend-color" style="background:${row.color};"></span>
+            <span>${row.label}</span>
+          </div>
+        `;
+      });
+
+      div.innerHTML = html;
       return div;
     };
-    legend.addTo(map);
+    brightnessLegend.addTo(map);
+  });
 
-    // 8) 左上角資訊框（hover 顯示目前數值）
-    const info = L.control({ position: 'topleft' });
-    info.onAdd = function() {
-      this._div = L.DomUtil.create('div', 'info');
-      this._div.style.padding = '8px 10px';
-      this._div.style.background = 'rgba(18,22,33,.85)';
-      this._div.style.color = '#fff';
-      this._div.style.borderRadius = '8px';
-      this._div.style.font = '12px/1.2 system-ui, sans-serif';
-      this.update();
-      return this._div;
-    };
-    info.update = function(props) {
-      if (!props) {
-        this._div.innerHTML = '<b>Hex</b>: 移動滑鼠查看';
-      } else {
-        const v = Number(props.brightness_filled);
-        this._div.innerHTML = `
-          <div><b>brightness_filled</b>: ${Number.isFinite(v) ? v.toFixed(2) : 'NA'}</div>
-        `;
+// ========== 5) 光害控制區：protect_square（可開關） ==========
+fetch('/ntu_light_map/data/protect_square_4326.geojson')
+  .then(r => r.json())
+  .then(geo => {
+    const protectLayer = L.geoJSON(geo, {
+      style: {
+        color: '#f97316',
+        fillColor: '#f97316',
+        fillOpacity: 1,
+        weight: 1.2
       }
-    };
-    info.addTo(map);
+    }).addTo(map);
+
+    layersControl.addOverlay(protectLayer, '光害控制區（示意）');
   });
-
-// --- 2) 假資料（最小可行）---
-// 路段（LineString），屬性包含：seg_id、avg_lux、length_m、near_wildlife、fixture_watt、fixture_cost
-const roadSegments = {
-  "type": "FeatureCollection",
-  "features": [
-    { "type": "Feature", "properties": { "seg_id": "R01", "name":"椰林大道-段1", "avg_lux": 3.2, "length_m": 60, "near_wildlife": true, "fixture_watt": 28, "fixture_cost": 6500, "cct_k": 4000 }, "geometry": { "type": "LineString", "coordinates": [ [121.5389,25.0177],[121.5397,25.0177] ] }},
-    { "type": "Feature", "properties": { "seg_id": "R02", "name":"學校門口-段A", "avg_lux": 6.5, "length_m": 40, "near_wildlife": false, "fixture_watt": 35, "fixture_cost": 7000, "cct_k": 3000 }, "geometry": { "type": "LineString", "coordinates": [ [121.5397,25.0177],[121.5404,25.0175] ] }},
-    { "type": "Feature", "properties": { "seg_id": "R03", "name":"小徑-生態區邊", "avg_lux": 2.1, "length_m": 30, "near_wildlife": true, "fixture_watt": 18, "fixture_cost": 6000, "cct_k": 4000 }, "geometry": { "type": "LineString", "coordinates": [ [121.5393,25.0173],[121.5400,25.0169] ] }}
-  ]
-};
-
-// 事故（Point）
-const incidents = {
-  "type": "FeatureCollection",
-  "features": [
-    {"type":"Feature","properties":{"type":"traffic","severity":"minor","date":"2024-11-03"},"geometry":{"type":"Point","coordinates":[121.5398,25.0176]}},
-    {"type":"Feature","properties":{"type":"wildlife","severity":"major","date":"2025-03-18"},"geometry":{"type":"Point","coordinates":[121.5395,25.0172]}}
-  ]
-};
-
-// 生態敏感區（Polygon，示意）
-const wildlifeZones = {
-  "type": "FeatureCollection",
-  "features": [
-    {"type":"Feature","properties":{"species":"bat","sensitivity":"high"},"geometry":{"type":"Polygon","coordinates":[[
-      [121.5387,25.0179],[121.5387,25.0172],[121.5392,25.0172],[121.5392,25.0179],[121.5387,25.0179]
-    ]]}}
-  ]
-};
-
-// --- 3) UI 控制 ---
-const minLuxInput = document.getElementById('minLux');
-const minLuxVal = document.getElementById('minLuxVal');
-const cctSelect = document.getElementById('cct');
-const cutoffCheckbox = document.getElementById('fullCutoff');
-const okCountEl = document.getElementById('okCount');
-const badCountEl = document.getElementById('badCount');
-const capexEl = document.getElementById('capex');
-const opexEl = document.getElementById('opex');
-const resetBtn = document.getElementById('resetBtn');
-const exportBtn = document.getElementById('exportBtn');
-
-minLuxInput.addEventListener('input', () => { minLuxVal.textContent = minLuxInput.value; refresh(); });
-cctSelect.addEventListener('change', refresh);
-cutoffCheckbox.addEventListener('change', refresh);
-resetBtn.addEventListener('click', () => {
-  minLuxInput.value = 5; minLuxVal.textContent = 5; cctSelect.value = '3000'; cutoffCheckbox.checked = true; refresh();
-});
-exportBtn.addEventListener('click', () => {
-  const cfg = {
-    minLux: Number(minLuxInput.value),
-    cct: Number(cctSelect.value),
-    fullCutoff: cutoffCheckbox.checked
-  };
-  const blob = new Blob([JSON.stringify(cfg, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'scenario.json'; a.click();
-  URL.revokeObjectURL(url);
-});
-
-// --- 4) 繪圖與樣式邏輯 ---
-let roadLayer, incidentLayer, wildlifeLayer;
-
-function luxPass(avgLux, minLux) { return avgLux >= minLux; }
-function ecoPenalty(cctK, nearWildlife, fullCutoff) {
-  let p = 0;
-  if (nearWildlife) p += 1;
-  if (cctK > 3000) p += 1; // 高CCT 對生態較不友善
-  if (!fullCutoff) p += 1; // 無遮光增加外溢
-  return p; // 0~3
-}
-
-function segColor(props, minLux, fullCutoff, cctK) {
-  const pass = luxPass(props.avg_lux, minLux);
-  const eco = ecoPenalty(cctK, props.near_wildlife, fullCutoff);
-  if (!pass) return '#ef4444'; // 不達標：紅
-  if (eco >= 2) return '#f59e0b'; // 生態風險高：橘
-  return '#10b981'; // 達標且風險低：綠
-}
-
-function drawLayers() {
-  const minLux = Number(minLuxInput.value);
-  const cctK = Number(cctSelect.value);
-  const fullCutoff = cutoffCheckbox.checked;
-
-  if (roadLayer) roadLayer.remove();
-  roadLayer = L.geoJSON(roadSegments, {
-    style: f => ({
-      color: segColor(f.properties, minLux, fullCutoff, cctK),
-      weight: 6, opacity: 0.9
-    }),
-    onEachFeature: (f, layer) => {
-      const p = f.properties;
-      const eco = ecoPenalty(cctK, p.near_wildlife, fullCutoff);
-      const ecoTxt = eco === 0 ? '低' : eco === 1 ? '中' : '高';
-      layer.bindPopup(`
-        <strong>${p.name}</strong><br/>
-        平均照度：${p.avg_lux} lx<br/>
-        生態風險（當前情境）：${ecoTxt}<br/>
-        目前燈色：${p.cct_k}K<br/>
-        <span class="muted">段長：${p.length_m} m，燈具功率：${p.fixture_watt} W</span>
-      `);
-    }
-  }).addTo(map);
-
-  if (incidentLayer) incidentLayer.remove();
-  incidentLayer = L.geoJSON(incidents, {
-    pointToLayer: (f, latlng) => L.circleMarker(latlng, { radius: 6, color: '#ef4444', fillColor: '#ef4444', fillOpacity: .85, weight: 1 }),
-    onEachFeature: (f, layer) => layer.bindPopup(`事件：${f.properties.type}<br/>嚴重度：${f.properties.severity}<br/>日期：${f.properties.date}`)
-  }).addTo(map);
-
-  if (wildlifeLayer) wildlifeLayer.remove();
-  wildlifeLayer = L.geoJSON(wildlifeZones, {
-    style: { color: '#f59e0b', fillColor:'#f59e0b', fillOpacity:.15, weight:2 }
-  }).addTo(map);
-}
-
-// --- 5) 粗估成本/能耗（示意公式，可換成真實參數） ---
-function recomputeKPIs() {
-  const minLux = Number(minLuxInput.value);
-  const cctK = Number(cctSelect.value);
-  const fullCutoff = cutoffCheckbox.checked;
-
-  let ok = 0, bad = 0, capex = 0, kwh = 0;
-  roadSegments.features.forEach(f => {
-    const p = f.properties;
-    const pass = luxPass(p.avg_lux, minLux);
-    if (pass) ok++; else bad++;
-    // 估算：若不達標，假設需換燈具一次；能耗以功率*路段等比例估（僅示意）
-    if (!pass) capex += p.fixture_cost;
-    // 年耗能約：功率(W) * 10 小時/日 * 365 / 1000
-    kwh += (p.fixture_watt * 10 * 365) / 1000;
-    // 若選 2700K + 全遮光，給 10% 節能（示意）
-    if (cctK <= 3000 && fullCutoff) kwh *= 0.9;
-  });
-  okCountEl.textContent = ok;
-  badCountEl.textContent = bad;
-  capexEl.textContent = Math.round(capex).toLocaleString();
-  opexEl.textContent = Math.round(kwh).toLocaleString();
-}
-
-function refresh() { drawLayers(); recomputeKPIs(); }
-
-// 初始
-refresh();
 
 </script>
 </body>
