@@ -1,65 +1,62 @@
-# Cloudflare deployment notes
+# Cloudflare 部署筆記
 
-## Pages project
+## Pages 專案
 
-Use the Cloudflare dashboard:
+使用 Cloudflare Dashboard 操作：
 
-1. Go to **Workers & Pages**.
-2. Select **Create application**.
-3. Select **Pages**.
-4. Connect this GitHub repository.
-5. Use these build settings:
-   - Framework preset: **None**
-   - Build command: leave empty
-   - Build output directory: `/`
-6. Deploy the project.
+1. 進入 **Workers & Pages**。
+2. 點選 **Create application**。
+3. 選擇 **Pages**。
+4. 連接這個 GitHub repository。
+5. 使用以下 build 設定：
+   - Framework preset：**None**
+   - Build command：留空
+   - Build output directory：`/`
+6. 部署專案。
 
-The static map and `functions/` API routes are deployed together as a Cloudflare Pages
-project.
+靜態地圖與 `functions/` API routes 會一起部署成同一個 Cloudflare Pages 專案。
 
-## D1 database
+## D1 資料庫
 
-Use the Cloudflare dashboard:
+使用 Cloudflare Dashboard 操作：
 
-1. Go to **Workers & Pages**.
-2. Open **D1 SQL Database**.
-3. Select **Create database**.
-4. Name it `ntu-light-map`.
-5. Copy the database ID into `wrangler.toml` under `database_id`.
+1. 進入 **Workers & Pages**。
+2. 打開 **D1 SQL Database**。
+3. 點選 **Create database**。
+4. 命名為 `ntu-light-map`。
+5. 將 database ID 複製到 `wrangler.toml` 的 `database_id`。
 
-Then bind the database to the Pages project:
+接著把 D1 綁定到 Pages 專案：
 
-1. Open the Pages project.
-2. Go to **Settings**.
-3. Open **Bindings**.
-4. Add a **D1 database binding**.
-5. Set the binding name to `DB`.
-6. Select the `ntu-light-map` database.
-7. Save and redeploy.
+1. 打開 Pages 專案。
+2. 進入 **Settings**。
+3. 打開 **Bindings**。
+4. 新增 **D1 database binding**。
+5. Binding name 設為 `DB`。
+6. 選擇 `ntu-light-map` 資料庫。
+7. 儲存並重新部署。
 
-Run the production migrations after the database exists:
+資料庫建立後，執行 production migration：
 
 ```sh
 npm run d1:migrate:remote
 ```
 
-Cloudflare's dashboard can create and bind the database, but the checked-in migration files
-are still applied with Wrangler.
+Cloudflare Dashboard 可以建立與綁定 D1，但 repo 內的 migration 檔仍需要用 Wrangler 套用。
 
-## Email verification variables
+## Email 驗證變數
 
-The app verifies reporters by sending a one-time code to an `@ntu.edu.tw` address.
-The sender account is:
+系統會寄一次性驗證碼到 `@ntu.edu.tw` 信箱。寄件帳號是：
 
 ```text
 light-map@ntusa.ntu.edu.tw
 ```
 
-In the Pages project:
+在 Pages 專案中：
 
-1. Go to **Settings**.
-2. Open **Variables and Secrets**.
-3. Add these production variables:
+1. 進入 **Settings**。
+2. 打開 **Variables and Secrets**。
+3. 新增以下 production variables：
 
 ```text
 HASH_SALT=<random secret>
@@ -69,37 +66,35 @@ SMTP_USER=light-map@ntusa.ntu.edu.tw
 SMTP_FROM=light-map@ntusa.ntu.edu.tw
 ```
 
-4. Add this production secret with **Encrypt** enabled:
+4. 新增以下 production secret，並啟用 **Encrypt**：
 
 ```text
 SMTP_PASS=<app password>
 ```
 
-Do not commit the app password. `HASH_SALT` is used before hashing reporter emails,
-session tokens, verification codes, and IP addresses.
+不要把 app password commit 進 Git。`HASH_SALT` 會用來雜湊 reporter email、session token、驗證碼與 IP。
 
-## Local development
+## 本機開發
 
-Wrangler Pages Functions reads local bindings from `.dev.vars`, so create it from the
-example file:
+Wrangler Pages Functions 會從 `.dev.vars` 讀取本機 bindings。先從範例檔建立：
 
 ```sh
 cp .dev.vars.example .dev.vars
 ```
 
-For local testing, `.dev.vars.example` enables `ALLOW_DEV_AUTH=true` and sets
-`DEV_EMAIL_CODE=123456`, so the app can verify without sending real email.
+本機測試時，`.dev.vars.example` 預設啟用 `ALLOW_DEV_AUTH=true`，並設定
+`DEV_EMAIL_CODE=123456`，所以可以不寄真實 email 也能完成驗證流程。
 
-Then run:
+接著執行：
 
 ```sh
 npm run d1:migrate:local
 npm run dev:auth
 ```
 
-Only run one dev server at a time. `npm run dev` and `npm run dev:auth` both use port
-`8788`, so starting both will fail with `Address already in use`.
+一次只跑一個 dev server。`npm run dev` 和 `npm run dev:auth` 都使用 port `8788`，同時啟動會出現 `Address already in use`。
 
-`npm run dev` starts Cloudflare Pages Functions locally. A plain static server will show
-`Cannot GET /api/protected/session` because it does not run the Functions runtime.
-Do not enable `ALLOW_DEV_AUTH` in production.
+`npm run dev` 會啟動 Cloudflare Pages Functions。本機若只用一般靜態伺服器，會看到
+`Cannot GET /api/protected/session`，因為一般靜態伺服器不會執行 `functions/`。
+
+Production 不要啟用 `ALLOW_DEV_AUTH`。
