@@ -1,4 +1,4 @@
-import { getAccessEmail, isAllowedNtuEmail } from "../../_shared/access.js";
+import { getSessionEmail, isAllowedNtuEmail } from "../../_shared/auth.js";
 import { badRequest, json, methodNotAllowed } from "../../_shared/http.js";
 import {
   clientIp,
@@ -10,7 +10,7 @@ import {
 const RATE_LIMIT_COUNT = 5;
 
 export async function onRequestPost({ request, env }) {
-  const email = await getAccessEmail(request, env);
+  const email = await getSessionEmail(request, env);
   if (!isAllowedNtuEmail(email)) {
     return json({ error: "unauthorized" }, { status: 401 });
   }

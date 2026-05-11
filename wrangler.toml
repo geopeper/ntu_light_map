@@ -9,6 +9,8 @@ database_id = "replace-with-your-d1-database-id"
 migrations_dir = "migrations"
 
 [vars]
-ACCESS_TEAM_DOMAIN = "replace-with-your-team.cloudflareaccess.com"
-ACCESS_AUD = "replace-with-your-access-aud"
 HASH_SALT = "replace-with-a-random-secret"
+SMTP_HOST = "smtp.gmail.com"
+SMTP_PORT = "465"
+SMTP_USER = "light-map@ntusa.ntu.edu.tw"
+SMTP_FROM = "light-map@ntusa.ntu.edu.tw"

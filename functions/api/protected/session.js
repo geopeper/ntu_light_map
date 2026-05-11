@@ -1,4 +1,4 @@
-import { getAccessEmail, isAllowedNtuEmail } from "../../_shared/access.js";
+import { getSessionEmail, isAllowedNtuEmail } from "../../_shared/auth.js";
 import { json } from "../../_shared/http.js";
 
 function safeReturnUrl(request) {
@@ -15,7 +15,7 @@ function safeReturnUrl(request) {
 }
 
 export async function onRequestGet({ request, env }) {
-  const email = await getAccessEmail(request, env);
+  const email = await getSessionEmail(request, env);
   if (!isAllowedNtuEmail(email)) {
     return json({ authenticated: false }, { status: 401 });
   }
