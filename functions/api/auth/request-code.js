@@ -30,7 +30,24 @@ export async function onRequestPost({ request, env }) {
      VALUES (?, ?, ?, datetime('now', '+10 minutes'))`,
   ).bind(email, codeHash, ipHash).run();
 
-  await sendVerificationEmail(env, { to: email, code });
+  try {
+    await sendVerificationEmail(env, { to: email, code });
+  } catch (error) {
+    console.error("verification_email_failed", {
+      message: error?.message,
+      smtp_host: env.SMTP_HOST || "smtp.gmail.com",
+      smtp_user: env.SMTP_USER || null,
+      has_smtp_pass: Boolean(env.SMTP_PASS),
+    });
+    return json(
+      {
+        error: "email_send_failed",
+        message: error?.message || "email_send_failed",
+      },
+      { status: 502 },
+    );
+  }
+
   return json({ ok: true });
 }
 
