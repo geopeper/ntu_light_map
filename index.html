@@ -747,7 +747,7 @@ async function loadIncidents() {
 }
 
 async function loadReportHexes() {
-  const geo = await loadJSON(assetUrl('/data/hex_empty_4326.geojson'));
+  const geo = await loadJSON(assetUrl('/data/report_hex_4326.geojson'));
   geo.features.forEach(feature => {
     const id = Number(feature.properties?.id);
     if (Number.isInteger(id)) hexFeatureById.set(id, feature);
