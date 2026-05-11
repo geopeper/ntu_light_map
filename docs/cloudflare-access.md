@@ -53,6 +53,13 @@ ALLOW_DEV_AUTH=true
 DEV_USER_EMAIL=dev@ntu.edu.tw
 ```
 
+Wrangler Pages Functions reads these local bindings from `.dev.vars`, so create it from the
+example file:
+
+```sh
+cp .dev.vars.example .dev.vars
+```
+
 Then run:
 
 ```sh
