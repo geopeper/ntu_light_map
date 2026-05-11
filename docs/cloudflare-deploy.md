@@ -59,7 +59,6 @@ light-map@ntusa.ntu.edu.tw
 3. 新增以下 production variables：
 
 ```text
-HASH_SALT=<random secret>
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=465
 SMTP_USER=light-map@ntusa.ntu.edu.tw
@@ -69,10 +68,11 @@ SMTP_FROM=light-map@ntusa.ntu.edu.tw
 4. 新增以下 production secret，並啟用 **Encrypt**：
 
 ```text
+HASH_SALT=<random secret>
 SMTP_PASS=<app password>
 ```
 
-不要把 app password commit 進 Git。`HASH_SALT` 會用來雜湊 reporter email、session token、驗證碼與 IP。
+不要把 `HASH_SALT` 或 app password commit 進 Git。`HASH_SALT` 會用來雜湊 reporter email、session token、驗證碼與 IP。
 
 ## 本機開發
 

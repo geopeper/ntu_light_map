@@ -9,7 +9,6 @@ database_id = "94ce1432-f3e9-4f60-9cd3-01c3879e130b"
 migrations_dir = "migrations"
 
 [vars]
-HASH_SALT = "6b8f212981416c5cb62173e6dc6b90e1701aa02a3a6a5fb9a68604c1b13d6a83"
 SMTP_HOST = "smtp.gmail.com"
 SMTP_PORT = "465"
 SMTP_USER = "light-map@ntusa.ntu.edu.tw"
