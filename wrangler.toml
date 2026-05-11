@@ -1,0 +1,14 @@
+name = "ntu-light-map"
+compatibility_date = "2026-05-11"
+pages_build_output_dir = "."
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ntu-light-map"
+database_id = "replace-with-your-d1-database-id"
+migrations_dir = "migrations"
+
+[vars]
+ACCESS_TEAM_DOMAIN = "replace-with-your-team.cloudflareaccess.com"
+ACCESS_AUD = "replace-with-your-access-aud"
+HASH_SALT = "replace-with-a-random-secret"
