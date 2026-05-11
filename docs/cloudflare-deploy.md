@@ -1,21 +1,52 @@
 # Cloudflare deployment notes
 
-## D1
+## Pages project
 
-Create a D1 database and copy its database ID into `wrangler.toml`.
+Use the Cloudflare dashboard:
+
+1. Go to **Workers & Pages**.
+2. Select **Create application**.
+3. Select **Pages**.
+4. Connect this GitHub repository.
+5. Use these build settings:
+   - Framework preset: **None**
+   - Build command: leave empty
+   - Build output directory: `/`
+6. Deploy the project.
+
+The static map and `functions/` API routes are deployed together as a Cloudflare Pages
+project.
+
+## D1 database
+
+Use the Cloudflare dashboard:
+
+1. Go to **Workers & Pages**.
+2. Open **D1 SQL Database**.
+3. Select **Create database**.
+4. Name it `ntu-light-map`.
+5. Copy the database ID into `wrangler.toml` under `database_id`.
+
+Then bind the database to the Pages project:
+
+1. Open the Pages project.
+2. Go to **Settings**.
+3. Open **Bindings**.
+4. Add a **D1 database binding**.
+5. Set the binding name to `DB`.
+6. Select the `ntu-light-map` database.
+7. Save and redeploy.
+
+Run the production migrations after the database exists:
 
 ```sh
-wrangler d1 create ntu-light-map
-wrangler d1 migrations apply ntu-light-map --remote
+npm run d1:migrate:remote
 ```
 
-For local development, apply the same migrations locally:
+Cloudflare's dashboard can create and bind the database, but the checked-in migration files
+are still applied with Wrangler.
 
-```sh
-wrangler d1 migrations apply ntu-light-map --local
-```
-
-## Email verification
+## Email verification variables
 
 The app verifies reporters by sending a one-time code to an `@ntu.edu.tw` address.
 The sender account is:
@@ -24,9 +55,11 @@ The sender account is:
 light-map@ntusa.ntu.edu.tw
 ```
 
-Store the app password as a Cloudflare Pages secret named `SMTP_PASS`. Do not commit it.
+In the Pages project:
 
-Required production variables:
+1. Go to **Settings**.
+2. Open **Variables and Secrets**.
+3. Add these production variables:
 
 ```text
 HASH_SALT=<random secret>
@@ -36,14 +69,14 @@ SMTP_USER=light-map@ntusa.ntu.edu.tw
 SMTP_FROM=light-map@ntusa.ntu.edu.tw
 ```
 
-Required production secret:
+4. Add this production secret with **Encrypt** enabled:
 
 ```text
 SMTP_PASS=<app password>
 ```
 
-`HASH_SALT` is used before hashing reporter emails, session tokens, verification codes,
-and IP addresses.
+Do not commit the app password. `HASH_SALT` is used before hashing reporter emails,
+session tokens, verification codes, and IP addresses.
 
 ## Local development
 
