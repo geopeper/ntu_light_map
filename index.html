@@ -756,16 +756,16 @@ async function loadReportHexes() {
   reportHexLayer = L.geoJSON(geo, {
     pane: 'incidentPane',
     style: {
-      color: '#6ee7d2',
+      color: '#cbd5e1',
       weight: 0.55,
-      opacity: 0.34,
-      fillColor: '#6ee7d2',
+      opacity: 0.28,
+      fillColor: '#cbd5e1',
       fillOpacity: 0.01
     },
     onEachFeature: (feature, layer) => {
       layer.on('click', () => selectReportHex(feature, layer));
       layer.on('mouseover', () => layer.setStyle({ opacity: 0.7, fillOpacity: 0.08, weight: 1 }));
-      layer.on('mouseout', () => layer.setStyle({ opacity: 0.34, fillOpacity: 0.01, weight: 0.55 }));
+      layer.on('mouseout', () => layer.setStyle({ opacity: 0.28, fillOpacity: 0.01, weight: 0.55 }));
     }
   });
 
