@@ -63,13 +63,6 @@ npm run dev:auth
 Only run one dev server at a time. `npm run dev` and `npm run dev:auth` both use port
 `8788`, so starting both will fail with `Address already in use`.
 
-If port `8788` is already occupied, either stop the existing Wrangler process with `x` or
-`Ctrl-C`, or use the alternate port:
-
-```sh
-npm run dev:auth:alt
-```
-
 `npm run dev` starts Cloudflare Pages Functions locally. A plain static server will show
 `Cannot GET /api/protected/session` because it does not run the Functions runtime.
 Do not enable `ALLOW_DEV_AUTH` in production.

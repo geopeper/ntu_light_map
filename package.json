@@ -4,9 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "npx wrangler pages dev . --port 8788",
-    "dev:alt": "npx wrangler pages dev . --port 8789",
     "dev:auth": "ALLOW_DEV_AUTH=true DEV_USER_EMAIL=dev@ntu.edu.tw npx wrangler pages dev . --port 8788",
-    "dev:auth:alt": "ALLOW_DEV_AUTH=true DEV_USER_EMAIL=dev@ntu.edu.tw npx wrangler pages dev . --port 8789",
     "d1:migrate:local": "npx wrangler d1 migrations apply ntu-light-map --local",
     "d1:migrate:remote": "npx wrangler d1 migrations apply ntu-light-map --remote"
   }
