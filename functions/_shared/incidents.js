@@ -9,10 +9,14 @@ export const INCIDENT_TYPES = new Set([
 export function validateIncidentInput(input) {
   const lat = Number(input?.lat);
   const lng = Number(input?.lng);
+  const hexId = Number(input?.hex_id);
   const type = String(input?.type || "");
   const description = String(input?.description || "").trim();
 
   const errors = {};
+  if (!Number.isInteger(hexId) || hexId <= 0) {
+    errors.hex_id = "invalid_hex_id";
+  }
   if (!Number.isFinite(lat) || lat < 25.01 || lat > 25.026) {
     errors.lat = "lat_out_of_bounds";
   }
@@ -33,6 +37,7 @@ export function validateIncidentInput(input) {
   return {
     ok: true,
     incident: {
+      hex_id: hexId,
       lat,
       lng,
       type,
@@ -57,6 +62,7 @@ export async function hashValue(value, salt = "") {
 export function publicIncident(row) {
   return {
     id: row.id,
+    hex_id: row.hex_id,
     lat: row.lat,
     lng: row.lng,
     type: row.type,
