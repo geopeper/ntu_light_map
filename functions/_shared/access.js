@@ -54,6 +54,9 @@ export async function getAccessEmail(request, env) {
   if (env.ALLOW_DEV_AUTH === "true" && devEmail) {
     return devEmail.toLowerCase();
   }
+  if (env.ALLOW_DEV_AUTH === "true" && env.DEV_USER_EMAIL) {
+    return env.DEV_USER_EMAIL.toLowerCase();
+  }
 
   const jwt = request.headers.get("cf-access-jwt-assertion");
   const teamDomain = normalizeTeamDomain(env.ACCESS_TEAM_DOMAIN);

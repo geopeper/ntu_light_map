@@ -50,7 +50,16 @@ For local API testing only, you can set:
 
 ```text
 ALLOW_DEV_AUTH=true
+DEV_USER_EMAIL=dev@ntu.edu.tw
 ```
 
-Then send `x-dev-user-email: someone@ntu.edu.tw` to protected endpoints.
+Then run:
+
+```sh
+npm run d1:migrate:local
+npm run dev:auth
+```
+
+`npm run dev` starts Cloudflare Pages Functions locally. A plain static server will show
+`Cannot GET /api/protected/session` because it does not run the Functions runtime.
 Do not enable `ALLOW_DEV_AUTH` in production.
