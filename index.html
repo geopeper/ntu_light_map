@@ -340,6 +340,7 @@
       color: var(--muted);
       font-weight: 700;
     }
+    .incident-field input,
     .incident-field select,
     .incident-field textarea{
       border: 1px solid rgba(148,163,184,.22);
@@ -350,6 +351,7 @@
       padding: 9px 10px;
       outline: none;
     }
+    .incident-section.hidden{ display:none; }
     .incident-field textarea{
       min-height: 78px;
       resize: vertical;
@@ -403,24 +405,44 @@
     <button id="incidentClose" class="incident-close" aria-label="關閉">×</button>
   </div>
   <form id="incidentForm" class="incident-body">
-    <div id="incidentStatus" class="incident-status">請在地圖上點選六邊形</div>
-    <label class="incident-field">
-      事件類型
-      <select id="incidentType" required>
-        <option value="lighting">照明不足</option>
-        <option value="traffic">交通風險</option>
-        <option value="harassment">騷擾或跟蹤</option>
-        <option value="obstacle">路面或障礙</option>
-        <option value="other">其他</option>
-      </select>
-    </label>
-    <label class="incident-field">
-      描述
-      <textarea id="incidentDescription" maxlength="300" required></textarea>
-    </label>
-    <div class="incident-actions">
-      <button type="button" id="incidentCancel" class="incident-secondary">取消</button>
-      <button type="submit" id="incidentSubmit" class="incident-primary" disabled>送出</button>
+    <div id="authSection" class="incident-section hidden">
+      <div id="authStatus" class="incident-status">請使用 NTU email 驗證後回報</div>
+      <label class="incident-field">
+        NTU Email
+        <input id="authEmail" type="email" autocomplete="email" placeholder="name@ntu.edu.tw" />
+      </label>
+      <div class="incident-actions">
+        <button type="button" id="authRequestCode" class="incident-primary">寄送驗證碼</button>
+      </div>
+      <label class="incident-field">
+        驗證碼
+        <input id="authCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" />
+      </label>
+      <div class="incident-actions">
+        <button type="button" id="authVerifyCode" class="incident-primary">驗證</button>
+      </div>
+    </div>
+
+    <div id="reportSection" class="incident-section hidden">
+      <div id="incidentStatus" class="incident-status">請在地圖上點選六邊形</div>
+      <label class="incident-field">
+        事件類型
+        <select id="incidentType" required>
+          <option value="lighting">照明不足</option>
+          <option value="traffic">交通風險</option>
+          <option value="harassment">騷擾或跟蹤</option>
+          <option value="obstacle">路面或障礙</option>
+          <option value="other">其他</option>
+        </select>
+      </label>
+      <label class="incident-field">
+        描述
+        <textarea id="incidentDescription" maxlength="300" required></textarea>
+      </label>
+      <div class="incident-actions">
+        <button type="button" id="incidentCancel" class="incident-secondary">取消</button>
+        <button type="submit" id="incidentSubmit" class="incident-primary" disabled>送出</button>
+      </div>
     </div>
   </form>
 </div>
@@ -568,12 +590,19 @@ const incidentDialog = document.getElementById('incidentDialog');
 const incidentForm = document.getElementById('incidentForm');
 const incidentClose = document.getElementById('incidentClose');
 const incidentCancel = document.getElementById('incidentCancel');
+const authSection = document.getElementById('authSection');
+const reportSection = document.getElementById('reportSection');
+const authStatus = document.getElementById('authStatus');
+const authEmail = document.getElementById('authEmail');
+const authCode = document.getElementById('authCode');
+const authRequestCode = document.getElementById('authRequestCode');
+const authVerifyCode = document.getElementById('authVerifyCode');
 const incidentStatus = document.getElementById('incidentStatus');
 const incidentType = document.getElementById('incidentType');
 const incidentDescription = document.getElementById('incidentDescription');
 const incidentSubmit = document.getElementById('incidentSubmit');
 
-let accessSession = null;
+let authSession = null;
 let reportHexLayer = null;
 let selectedHexLayer = null;
 let selectedHex = null;
@@ -590,6 +619,27 @@ addLayerToggle('dataLayers', {
 function setIncidentStatus(message, state = '') {
   incidentStatus.textContent = message;
   incidentStatus.className = `incident-status ${state}`.trim();
+}
+
+function setAuthStatus(message, state = '') {
+  authStatus.textContent = message;
+  authStatus.className = `incident-status ${state}`.trim();
+}
+
+function showAuthSection() {
+  authSection.classList.remove('hidden');
+  reportSection.classList.add('hidden');
+  if (reportHexLayer && map.hasLayer(reportHexLayer)) {
+    map.removeLayer(reportHexLayer);
+  }
+}
+
+function showReportSection() {
+  authSection.classList.add('hidden');
+  reportSection.classList.remove('hidden');
+  if (reportHexLayer && !map.hasLayer(reportHexLayer)) {
+    reportHexLayer.addTo(map);
+  }
 }
 
 function escapeHtml(value) {
@@ -643,8 +693,11 @@ function selectReportHex(feature, layer) {
 
 function closeIncidentDialog() {
   incidentDialog.classList.add('hidden');
+  authSection.classList.add('hidden');
+  reportSection.classList.add('hidden');
   selectedHex = null;
   incidentDescription.value = '';
+  authCode.value = '';
   incidentSubmit.disabled = true;
   setIncidentStatus('請在地圖上點選六邊形');
   if (selectedHexLayer) {
@@ -659,12 +712,11 @@ function closeIncidentDialog() {
 function openIncidentDialog() {
   incidentDialog.classList.remove('hidden');
   setIncidentStatus('請在地圖上點選六邊形');
-  if (reportHexLayer && !map.hasLayer(reportHexLayer)) {
-    reportHexLayer.addTo(map);
-  }
+  if (authSession?.authenticated) showReportSection();
+  else showAuthSection();
 }
 
-async function getAccessSession() {
+async function getAuthSession() {
   try {
     const response = await fetch('/api/protected/session', {
       headers: { accept: 'application/json' }
@@ -676,18 +728,8 @@ async function getAccessSession() {
   }
 }
 
-function redirectToAccessLogin() {
-  const target = new URL(window.location.href);
-  target.hash = 'new-incident';
-  window.location.href = `/api/protected/session?return=${encodeURIComponent(target.toString())}`;
-}
-
 async function beginIncidentFlow() {
-  accessSession = accessSession || await getAccessSession();
-  if (!accessSession?.authenticated) {
-    redirectToAccessLogin();
-    return;
-  }
+  authSession = authSession || await getAuthSession();
   openIncidentDialog();
 }
 
@@ -781,8 +823,82 @@ incidentClose.onclick = closeIncidentDialog;
 incidentCancel.onclick = closeIncidentDialog;
 incidentDescription.addEventListener('input', updateIncidentSubmitState);
 
+authRequestCode.onclick = async () => {
+  const email = authEmail.value.trim().toLowerCase();
+  if (!email.endsWith('@ntu.edu.tw')) {
+    setAuthStatus('請輸入 @ntu.edu.tw email', 'error');
+    return;
+  }
+
+  authRequestCode.disabled = true;
+  setAuthStatus('寄送中');
+
+  try {
+    const response = await fetch('/api/auth/request-code', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        accept: 'application/json'
+      },
+      body: JSON.stringify({ email })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      setAuthStatus(errorData.message || errorData.error || '寄送失敗', 'error');
+      return;
+    }
+
+    setAuthStatus('驗證碼已寄出，請檢查信箱', 'ok');
+    authCode.focus();
+  } catch {
+    setAuthStatus('寄送失敗', 'error');
+  } finally {
+    authRequestCode.disabled = false;
+  }
+};
+
+authVerifyCode.onclick = async () => {
+  const email = authEmail.value.trim().toLowerCase();
+  const code = authCode.value.trim();
+  if (!email.endsWith('@ntu.edu.tw') || !/^\d{6}$/.test(code)) {
+    setAuthStatus('請輸入 NTU email 與 6 位數驗證碼', 'error');
+    return;
+  }
+
+  authVerifyCode.disabled = true;
+  setAuthStatus('驗證中');
+
+  try {
+    const response = await fetch('/api/auth/verify-code', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        accept: 'application/json'
+      },
+      body: JSON.stringify({ email, code })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      setAuthStatus(errorData.message || errorData.error || '驗證失敗', 'error');
+      return;
+    }
+
+    authSession = await response.json();
+    setAuthStatus('驗證完成', 'ok');
+    showReportSection();
+    setIncidentStatus('請在地圖上點選六邊形');
+  } catch {
+    setAuthStatus('驗證失敗', 'error');
+  } finally {
+    authVerifyCode.disabled = false;
+  }
+};
+
 incidentForm.addEventListener('submit', async event => {
   event.preventDefault();
+  if (reportSection.classList.contains('hidden')) return;
   if (!selectedHex) {
     setIncidentStatus('請先點選六邊形', 'error');
     return;
@@ -808,7 +924,9 @@ incidentForm.addEventListener('submit', async event => {
     });
 
     if (response.status === 401 || response.status === 403) {
-      redirectToAccessLogin();
+      authSession = null;
+      showAuthSection();
+      setAuthStatus('請先完成 NTU email 驗證', 'error');
       return;
     }
     if (!response.ok) {
