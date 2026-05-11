@@ -757,15 +757,15 @@ async function loadReportHexes() {
     pane: 'incidentPane',
     style: {
       color: '#6ee7d2',
-      weight: 0.8,
-      opacity: 0.55,
+      weight: 0.55,
+      opacity: 0.34,
       fillColor: '#6ee7d2',
-      fillOpacity: 0.04
+      fillOpacity: 0.01
     },
     onEachFeature: (feature, layer) => {
       layer.on('click', () => selectReportHex(feature, layer));
-      layer.on('mouseover', () => layer.setStyle({ fillOpacity: 0.16, weight: 1.1 }));
-      layer.on('mouseout', () => layer.setStyle({ fillOpacity: 0.04, weight: 0.8 }));
+      layer.on('mouseover', () => layer.setStyle({ opacity: 0.7, fillOpacity: 0.08, weight: 1 }));
+      layer.on('mouseout', () => layer.setStyle({ opacity: 0.34, fillOpacity: 0.01, weight: 0.55 }));
     }
   });
 
