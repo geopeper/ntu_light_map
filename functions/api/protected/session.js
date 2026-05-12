@@ -1,5 +1,6 @@
 import { getSessionEmail, isAllowedNtuEmail } from "../../_shared/auth.js";
-import { json } from "../../_shared/http.js";
+import { json, serverMisconfigured } from "../../_shared/http.js";
+import { hashSalt } from "../../_shared/incidents.js";
 
 function safeReturnUrl(request) {
   const url = new URL(request.url);
@@ -15,6 +16,10 @@ function safeReturnUrl(request) {
 }
 
 export async function onRequestGet({ request, env }) {
+  if (!hashSalt(env)) {
+    return serverMisconfigured("missing_hash_salt");
+  }
+
   const email = await getSessionEmail(request, env);
   if (!isAllowedNtuEmail(email)) {
     return json({ authenticated: false }, { status: 401 });

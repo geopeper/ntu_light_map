@@ -21,3 +21,7 @@ export function methodNotAllowed(allowed) {
 export function badRequest(message, details = undefined) {
   return json({ error: "bad_request", message, details }, { status: 400 });
 }
+
+export function serverMisconfigured(message) {
+  return json({ error: "server_misconfigured", message }, { status: 500 });
+}

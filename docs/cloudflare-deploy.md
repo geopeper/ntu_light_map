@@ -72,7 +72,13 @@ HASH_SALT=<random secret>
 SMTP_PASS=<app password>
 ```
 
-不要把 `HASH_SALT` 或 app password commit 進 Git。`HASH_SALT` 會用來雜湊 reporter email、session token、驗證碼與 IP。
+可以用以下指令產生 `HASH_SALT`：
+
+```sh
+openssl rand -base64 32
+```
+
+不要把 `HASH_SALT` 或 app password commit 進 Git。`HASH_SALT` 會用來雜湊 reporter email、session token、驗證碼與 IP。後端會把缺少 `HASH_SALT` 視為部署設定錯誤，直接回傳 `server_misconfigured`。
 
 ## 本機開發
 

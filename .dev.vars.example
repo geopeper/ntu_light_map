@@ -1,0 +1,3 @@
+HASH_SALT=local-development-only-change-me
+ALLOW_DEV_AUTH=true
+DEV_EMAIL_CODE=123456

@@ -1,7 +1,8 @@
 import { getSessionEmail, isAllowedNtuEmail } from "../../_shared/auth.js";
-import { badRequest, json, methodNotAllowed } from "../../_shared/http.js";
+import { badRequest, json, methodNotAllowed, serverMisconfigured } from "../../_shared/http.js";
 import {
   clientIp,
+  hashSalt,
   hashValue,
   publicIncident,
   validateIncidentInput,
@@ -10,6 +11,11 @@ import {
 const RATE_LIMIT_COUNT = 5;
 
 export async function onRequestPost({ request, env }) {
+  const salt = hashSalt(env);
+  if (!salt) {
+    return serverMisconfigured("missing_hash_salt");
+  }
+
   const email = await getSessionEmail(request, env);
   if (!isAllowedNtuEmail(email)) {
     return json({ error: "unauthorized" }, { status: 401 });
@@ -27,7 +33,6 @@ export async function onRequestPost({ request, env }) {
     return badRequest("invalid_incident", validated.errors);
   }
 
-  const salt = env.HASH_SALT || "";
   const reporterHash = await hashValue(email, salt);
   const ipHash = await hashValue(clientIp(request), salt);
 

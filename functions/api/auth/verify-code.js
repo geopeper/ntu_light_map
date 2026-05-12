@@ -1,6 +1,6 @@
 import { createSession, isAllowedNtuEmail, sessionCookie } from "../../_shared/auth.js";
-import { badRequest, json, methodNotAllowed } from "../../_shared/http.js";
-import { hashValue } from "../../_shared/incidents.js";
+import { badRequest, json, methodNotAllowed, serverMisconfigured } from "../../_shared/http.js";
+import { hashSalt, hashValue } from "../../_shared/incidents.js";
 
 export async function onRequestPost({ request, env }) {
   let input;
@@ -14,6 +14,10 @@ export async function onRequestPost({ request, env }) {
   const code = String(input?.code || "").trim();
   if (!isAllowedNtuEmail(email) || !/^\d{6}$/.test(code)) {
     return badRequest("invalid_code");
+  }
+  const salt = hashSalt(env);
+  if (!salt) {
+    return serverMisconfigured("missing_hash_salt");
   }
 
   const row = await env.DB.prepare(
@@ -30,7 +34,7 @@ export async function onRequestPost({ request, env }) {
     return json({ error: "invalid_code" }, { status: 401 });
   }
 
-  const codeHash = await hashValue(`${email}:${code}`, env.HASH_SALT || "");
+  const codeHash = await hashValue(`${email}:${code}`, salt);
   if (row.code_hash !== codeHash) {
     await env.DB.prepare(
       `UPDATE email_verification_codes

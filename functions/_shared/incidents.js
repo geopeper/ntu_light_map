@@ -51,8 +51,25 @@ export function clientIp(request) {
   return request.headers.get("cf-connecting-ip") || forwarded?.split(",")[0]?.trim() || "unknown";
 }
 
-export async function hashValue(value, salt = "") {
-  const data = new TextEncoder().encode(`${salt}:${value}`);
+export function hashSalt(env) {
+  const salt = typeof env?.HASH_SALT === "string" ? env.HASH_SALT.trim() : "";
+  return salt || null;
+}
+
+export function requireHashSalt(env) {
+  const salt = hashSalt(env);
+  if (!salt) {
+    throw new Error("missing_hash_salt");
+  }
+  return salt;
+}
+
+export async function hashValue(value, salt) {
+  const normalizedSalt = typeof salt === "string" ? salt.trim() : "";
+  if (!normalizedSalt) {
+    throw new Error("missing_hash_salt");
+  }
+  const data = new TextEncoder().encode(`${normalizedSalt}:${value}`);
   const digest = await crypto.subtle.digest("SHA-256", data);
   return Array.from(new Uint8Array(digest))
     .map((byte) => byte.toString(16).padStart(2, "0"))

@@ -1,6 +1,6 @@
 import { authRateLimited, isAllowedNtuEmail, randomDigits } from "../../_shared/auth.js";
-import { badRequest, json, methodNotAllowed } from "../../_shared/http.js";
-import { clientIp, hashValue } from "../../_shared/incidents.js";
+import { badRequest, json, methodNotAllowed, serverMisconfigured } from "../../_shared/http.js";
+import { clientIp, hashSalt, hashValue } from "../../_shared/incidents.js";
 import { sendVerificationEmail } from "../../_shared/smtp.js";
 
 export async function onRequestPost({ request, env }) {
@@ -15,6 +15,10 @@ export async function onRequestPost({ request, env }) {
   if (!isAllowedNtuEmail(email)) {
     return badRequest("invalid_email");
   }
+  const salt = hashSalt(env);
+  if (!salt) {
+    return serverMisconfigured("missing_hash_salt");
+  }
   if (await authRateLimited(request, env, email)) {
     return json({ error: "rate_limited" }, { status: 429 });
   }
@@ -22,8 +26,8 @@ export async function onRequestPost({ request, env }) {
   const code = env.DEV_EMAIL_CODE && env.ALLOW_DEV_AUTH === "true"
     ? env.DEV_EMAIL_CODE
     : randomDigits(6);
-  const codeHash = await hashValue(`${email}:${code}`, env.HASH_SALT || "");
-  const ipHash = await hashValue(clientIp(request), env.HASH_SALT || "");
+  const codeHash = await hashValue(`${email}:${code}`, salt);
+  const ipHash = await hashValue(clientIp(request), salt);
 
   await env.DB.prepare(
     `INSERT INTO email_verification_codes (email, code_hash, ip_hash, expires_at)

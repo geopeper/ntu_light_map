@@ -1,4 +1,4 @@
-import { clientIp, hashValue } from "./incidents.js";
+import { clientIp, hashValue, requireHashSalt } from "./incidents.js";
 
 const SESSION_COOKIE = "ntu_light_map_session";
 const SESSION_DAYS = 30;
@@ -54,7 +54,7 @@ export function clearSessionCookie() {
 
 export async function createSession(env, email) {
   const token = randomToken();
-  const salt = env.HASH_SALT || "";
+  const salt = requireHashSalt(env);
   const tokenHash = await hashValue(token, salt);
   const emailHash = await hashValue(email, salt);
 
@@ -74,7 +74,7 @@ export async function getSessionEmail(request, env) {
   const token = parseCookies(request)[SESSION_COOKIE];
   if (!token) return null;
 
-  const tokenHash = await hashValue(token, env.HASH_SALT || "");
+  const tokenHash = await hashValue(token, requireHashSalt(env));
   const session = await env.DB.prepare(
     `SELECT email
      FROM auth_sessions
@@ -86,7 +86,7 @@ export async function getSessionEmail(request, env) {
 }
 
 export async function authRateLimited(request, env, email) {
-  const ipHash = await hashValue(clientIp(request), env.HASH_SALT || "");
+  const ipHash = await hashValue(clientIp(request), requireHashSalt(env));
   const emailRecent = await env.DB.prepare(
     `SELECT COUNT(*) AS count
      FROM email_verification_codes
