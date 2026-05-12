@@ -33,6 +33,14 @@ function base64(value) {
   return btoa(unescape(encodeURIComponent(value)));
 }
 
+function encodedWord(value) {
+  return `=?UTF-8?B?${base64(value)}?=`;
+}
+
+function wrappedBase64(value) {
+  return base64(value).replace(/.{1,76}/g, "$&\r\n").trimEnd();
+}
+
 function escapeHeader(value) {
   return String(value).replace(/[\r\n]+/g, " ").trim();
 }
@@ -83,14 +91,14 @@ export async function sendVerificationEmail(env, { to, code }) {
       "如果不是你本人操作，請忽略這封信。",
     ].join("\r\n");
     const message = [
-      `From: 台大夜間亮度地圖 <${escapeHeader(from)}>`,
+      `From: ${encodedWord("台大夜間亮度地圖")} <${escapeHeader(from)}>`,
       `To: ${escapeHeader(to)}`,
-      `Subject: =?UTF-8?B?${base64(subject)}?=`,
+      `Subject: ${encodedWord(subject)}`,
       "MIME-Version: 1.0",
       "Content-Type: text/plain; charset=UTF-8",
-      "Content-Transfer-Encoding: 8bit",
+      "Content-Transfer-Encoding: base64",
       "",
-      dotStuff(text),
+      dotStuff(wrappedBase64(text)),
       ".",
     ].join("\r\n");
 
