@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -262,8 +261,131 @@
     }
     .panel-fab.show{ display:inline-flex; }
 
+    .incident-fab{
+      position: fixed;
+      left: 16px;
+      bottom: 16px;
+      z-index: 9998;
+      border: 1px solid rgba(110, 231, 210, .35);
+      background: rgba(12, 18, 28, .88);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 800;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .incident-fab:hover{ background: rgba(19, 30, 43, .94); }
+
+    .incident-dialog{
+      position: fixed;
+      left: 16px;
+      bottom: 70px;
+      z-index: 10000;
+      width: min(320px, calc(100vw - 32px));
+      background: var(--bg-strong);
+      color: var(--text);
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      overflow: hidden;
+    }
+    .incident-dialog.hidden{ display:none; }
+    .incident-header{
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--stroke);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+    }
+    .incident-header strong{
+      font-size: 13px;
+      line-height: 1.25;
+    }
+    .incident-close{
+      cursor: pointer;
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      border-radius: 10px;
+      width: 32px;
+      height: 32px;
+      font-size: 18px;
+      line-height: 1;
+    }
+    .incident-body{
+      padding: 12px;
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+      font-size: 12px;
+    }
+    .incident-status{
+      min-height: 18px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .incident-status.error{ color:#f4a5a5; }
+    .incident-status.ok{ color:#8ee0bd; }
+    .incident-field{
+      display:flex;
+      flex-direction:column;
+      gap: 5px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .incident-field input,
+    .incident-field select,
+    .incident-field textarea{
+      border: 1px solid rgba(148,163,184,.22);
+      background: rgba(3, 7, 18, .62);
+      color: var(--text);
+      border-radius: 10px;
+      font: 13px/1.4 var(--font);
+      padding: 9px 10px;
+      outline: none;
+    }
+    .incident-section.hidden{ display:none; }
+    .incident-field textarea{
+      min-height: 78px;
+      resize: vertical;
+    }
+    .incident-actions{
+      display:flex;
+      gap: 8px;
+      justify-content:flex-end;
+    }
+    .incident-actions button{
+      cursor: pointer;
+      border: 1px solid var(--stroke);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .incident-secondary{
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+    }
+    .incident-primary{
+      background: var(--accent-2);
+      color: #07131a;
+    }
+    .incident-primary:disabled{
+      opacity: .5;
+      cursor: not-allowed;
+    }
+
     @media (max-width: 640px){
       .layers-panel{ width: 220px; }
+      .incident-fab{ left: 12px; bottom: 12px; }
+      .incident-dialog{ left: 12px; bottom: 62px; width: calc(100vw - 24px); }
     }
   </style>
 </head>
@@ -274,6 +396,56 @@
 <button id="panelFab" class="panel-fab">
   <span class="mini"></span> 圖層
 </button>
+
+<button id="incidentFab" class="incident-fab">＋ 安全事件</button>
+
+<div id="incidentDialog" class="incident-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="incidentTitle">
+  <div class="incident-header">
+    <strong id="incidentTitle">新增安全事件</strong>
+    <button id="incidentClose" class="incident-close" aria-label="關閉">×</button>
+  </div>
+  <form id="incidentForm" class="incident-body">
+    <div id="authSection" class="incident-section hidden">
+      <div id="authStatus" class="incident-status">請使用 NTU email 驗證後回報</div>
+      <label class="incident-field">
+        NTU Email
+        <input id="authEmail" type="email" autocomplete="email" placeholder="name@ntu.edu.tw" />
+      </label>
+      <div class="incident-actions">
+        <button type="button" id="authRequestCode" class="incident-primary">寄送驗證碼</button>
+      </div>
+      <label class="incident-field">
+        驗證碼
+        <input id="authCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" />
+      </label>
+      <div class="incident-actions">
+        <button type="button" id="authVerifyCode" class="incident-primary">驗證</button>
+      </div>
+    </div>
+
+    <div id="reportSection" class="incident-section hidden">
+      <div id="incidentStatus" class="incident-status">請在地圖上點選六邊形</div>
+      <label class="incident-field">
+        事件類型
+        <select id="incidentType" required>
+          <option value="lighting">照明不足</option>
+          <option value="traffic">交通風險</option>
+          <option value="harassment">騷擾或跟蹤</option>
+          <option value="obstacle">路面或障礙</option>
+          <option value="other">其他</option>
+        </select>
+      </label>
+      <label class="incident-field">
+        描述
+        <textarea id="incidentDescription" maxlength="300" required></textarea>
+      </label>
+      <div class="incident-actions">
+        <button type="button" id="incidentCancel" class="incident-secondary">取消</button>
+        <button type="submit" id="incidentSubmit" class="incident-primary" disabled>送出</button>
+      </div>
+    </div>
+  </form>
+</div>
 
 <!-- custom layers sidebar -->
 <div id="layersPanel" class="layers-panel">
@@ -316,6 +488,14 @@ map.getPane('safetyPane').style.zIndex = 600;
 
 map.createPane('protectPane');    // 下層
 map.getPane('protectPane').style.zIndex = 550;
+
+map.createPane('incidentPane');   // 回報事件
+map.getPane('incidentPane').style.zIndex = 700;
+
+const ASSET_BASE = location.pathname.startsWith('/ntu_light_map/') ? '/ntu_light_map' : '';
+function assetUrl(path) {
+  return `${ASSET_BASE}${path}`;
+}
 
 // 底圖（常駐，不提供關閉）
 const baseTile = L.tileLayer(
@@ -395,8 +575,388 @@ function addLayerToggle(containerId, {
   if (checked) layer.addTo(map);
 }
 
+// ========== 4) 安全事件回報 ==========
+const incidentTypeMeta = {
+  lighting: { label: '照明不足', color: '#f7d96c' },
+  traffic: { label: '交通風險', color: '#ff9b6a' },
+  harassment: { label: '騷擾或跟蹤', color: '#ef718d' },
+  obstacle: { label: '路面或障礙', color: '#b58cff' },
+  other: { label: '其他', color: '#6ee7d2' }
+};
+
+const incidentHexLayer = L.layerGroup();
+const incidentFab = document.getElementById('incidentFab');
+const incidentDialog = document.getElementById('incidentDialog');
+const incidentForm = document.getElementById('incidentForm');
+const incidentClose = document.getElementById('incidentClose');
+const incidentCancel = document.getElementById('incidentCancel');
+const authSection = document.getElementById('authSection');
+const reportSection = document.getElementById('reportSection');
+const authStatus = document.getElementById('authStatus');
+const authEmail = document.getElementById('authEmail');
+const authCode = document.getElementById('authCode');
+const authRequestCode = document.getElementById('authRequestCode');
+const authVerifyCode = document.getElementById('authVerifyCode');
+const incidentStatus = document.getElementById('incidentStatus');
+const incidentType = document.getElementById('incidentType');
+const incidentDescription = document.getElementById('incidentDescription');
+const incidentSubmit = document.getElementById('incidentSubmit');
+
+let authSession = null;
+let reportHexLayer = null;
+let selectedHexLayer = null;
+let selectedHex = null;
+let allIncidents = [];
+const hexFeatureById = new Map();
+
+addLayerToggle('dataLayers', {
+  label: '安全事件回報',
+  layer: incidentHexLayer,
+  checked: true,
+  swatchColor: '#ef718d'
+});
+
+function setIncidentStatus(message, state = '') {
+  incidentStatus.textContent = message;
+  incidentStatus.className = `incident-status ${state}`.trim();
+}
+
+function setAuthStatus(message, state = '') {
+  authStatus.textContent = message;
+  authStatus.className = `incident-status ${state}`.trim();
+}
+
+function showAuthSection() {
+  authSection.classList.remove('hidden');
+  reportSection.classList.add('hidden');
+  if (reportHexLayer && map.hasLayer(reportHexLayer)) {
+    map.removeLayer(reportHexLayer);
+  }
+}
+
+function showReportSection() {
+  authSection.classList.add('hidden');
+  reportSection.classList.remove('hidden');
+  if (reportHexLayer && !map.hasLayer(reportHexLayer)) {
+    reportHexLayer.addTo(map);
+  }
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, char => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[char]);
+}
+
+function incidentLabel(type) {
+  return incidentTypeMeta[type]?.label || incidentTypeMeta.other.label;
+}
+
+function incidentColor(type) {
+  return incidentTypeMeta[type]?.color || incidentTypeMeta.other.color;
+}
+
+function updateIncidentSubmitState() {
+  incidentSubmit.disabled = !selectedHex || incidentDescription.value.trim().length === 0;
+}
+
+function hexCenter(layer) {
+  const center = layer.getBounds().getCenter();
+  return { lat: center.lat, lng: center.lng };
+}
+
+function selectReportHex(feature, layer) {
+  const id = Number(feature.properties?.id);
+  if (!Number.isInteger(id)) return;
+
+  selectedHex = { id, center: hexCenter(layer), feature };
+  if (selectedHexLayer) selectedHexLayer.remove();
+
+  selectedHexLayer = L.geoJSON(feature, {
+    pane: 'incidentPane',
+    style: {
+      color: '#f3f6ff',
+      weight: 2,
+      opacity: 1,
+      fillColor: '#6ee7d2',
+      fillOpacity: 0.24
+    }
+  }).addTo(map);
+
+  setIncidentStatus(`已選 Hex ${id}`, 'ok');
+  updateIncidentSubmitState();
+}
+
+function closeIncidentDialog() {
+  incidentDialog.classList.add('hidden');
+  authSection.classList.add('hidden');
+  reportSection.classList.add('hidden');
+  selectedHex = null;
+  incidentDescription.value = '';
+  authCode.value = '';
+  incidentSubmit.disabled = true;
+  setIncidentStatus('請在地圖上點選六邊形');
+  if (selectedHexLayer) {
+    selectedHexLayer.remove();
+    selectedHexLayer = null;
+  }
+  if (reportHexLayer && map.hasLayer(reportHexLayer)) {
+    map.removeLayer(reportHexLayer);
+  }
+}
+
+function openIncidentDialog() {
+  incidentDialog.classList.remove('hidden');
+  setIncidentStatus('請在地圖上點選六邊形');
+  if (authSession?.authenticated) showReportSection();
+  else showAuthSection();
+}
+
+async function getAuthSession() {
+  try {
+    const response = await fetch('/api/protected/session', {
+      headers: { accept: 'application/json' }
+    });
+    if (!response.ok) return null;
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+async function beginIncidentFlow() {
+  authSession = authSession || await getAuthSession();
+  openIncidentDialog();
+}
+
+function renderIncidentHexes() {
+  incidentHexLayer.clearLayers();
+  const grouped = new Map();
+  allIncidents.forEach(incident => {
+    if (!Number.isInteger(Number(incident.hex_id))) return;
+    const key = Number(incident.hex_id);
+    const list = grouped.get(key) || [];
+    list.push(incident);
+    grouped.set(key, list);
+  });
+
+  grouped.forEach((incidents, hexId) => {
+    const feature = hexFeatureById.get(hexId);
+    if (!feature) return;
+
+    const latest = incidents[0];
+    const color = incidentColor(latest.type);
+    const rows = incidents.slice(0, 5).map(incident => `
+      <div style="border-top:1px solid rgba(15,23,42,.12); padding-top:5px; margin-top:5px;">
+        <b>${escapeHtml(incidentLabel(incident.type))}</b><br/>
+        ${escapeHtml(incident.description)}<br/>
+        <span style="color:#64748b;">${escapeHtml(incident.created_at)}</span>
+      </div>
+    `).join('');
+
+    const layer = L.geoJSON(feature, {
+      pane: 'incidentPane',
+      style: {
+        color,
+        weight: 1.4,
+        opacity: 0.95,
+        fillColor: color,
+        fillOpacity: Math.min(0.62, 0.28 + incidents.length * 0.08)
+      }
+    });
+
+    layer.bindPopup(`
+      <div style="font:12px/1.5 system-ui,sans-serif; min-width:180px;">
+        <b>Hex ${hexId}</b><br/>
+        回報數：${incidents.length}
+        ${rows}
+      </div>
+    `);
+    incidentHexLayer.addLayer(layer);
+  });
+}
+
+async function loadIncidents() {
+  const response = await fetch('/api/incidents', { headers: { accept: 'application/json' } });
+  if (!response.ok) return;
+  const data = await response.json();
+  allIncidents = Array.isArray(data.incidents) ? data.incidents : [];
+  renderIncidentHexes();
+}
+
+async function loadReportHexes() {
+  const geo = await loadJSON(assetUrl('/data/report_hex_4326.geojson'));
+  geo.features.forEach(feature => {
+    const id = Number(feature.properties?.id);
+    if (Number.isInteger(id)) hexFeatureById.set(id, feature);
+  });
+
+  reportHexLayer = L.geoJSON(geo, {
+    pane: 'incidentPane',
+    style: {
+      color: '#cbd5e1',
+      weight: 0.55,
+      opacity: 0.28,
+      fillColor: '#cbd5e1',
+      fillOpacity: 0.01
+    },
+    onEachFeature: (feature, layer) => {
+      layer.on('click', () => selectReportHex(feature, layer));
+      layer.on('mouseover', () => layer.setStyle({ opacity: 0.7, fillOpacity: 0.08, weight: 1 }));
+      layer.on('mouseout', () => layer.setStyle({ opacity: 0.28, fillOpacity: 0.01, weight: 0.55 }));
+    }
+  });
+
+  if (!incidentDialog.classList.contains('hidden') && !map.hasLayer(reportHexLayer)) {
+    reportHexLayer.addTo(map);
+  }
+
+  await loadIncidents();
+}
+
+incidentFab.onclick = beginIncidentFlow;
+incidentClose.onclick = closeIncidentDialog;
+incidentCancel.onclick = closeIncidentDialog;
+incidentDescription.addEventListener('input', updateIncidentSubmitState);
+
+authRequestCode.onclick = async () => {
+  const email = authEmail.value.trim().toLowerCase();
+  if (!email.endsWith('@ntu.edu.tw')) {
+    setAuthStatus('請輸入 @ntu.edu.tw email', 'error');
+    return;
+  }
+
+  authRequestCode.disabled = true;
+  setAuthStatus('寄送中');
+
+  try {
+    const response = await fetch('/api/auth/request-code', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        accept: 'application/json'
+      },
+      body: JSON.stringify({ email })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      setAuthStatus(errorData.message || errorData.error || '寄送失敗', 'error');
+      return;
+    }
+
+    setAuthStatus('驗證碼已寄出，請檢查信箱', 'ok');
+    authCode.focus();
+  } catch {
+    setAuthStatus('寄送失敗', 'error');
+  } finally {
+    authRequestCode.disabled = false;
+  }
+};
+
+authVerifyCode.onclick = async () => {
+  const email = authEmail.value.trim().toLowerCase();
+  const code = authCode.value.trim();
+  if (!email.endsWith('@ntu.edu.tw') || !/^\d{6}$/.test(code)) {
+    setAuthStatus('請輸入 NTU email 與 6 位數驗證碼', 'error');
+    return;
+  }
+
+  authVerifyCode.disabled = true;
+  setAuthStatus('驗證中');
+
+  try {
+    const response = await fetch('/api/auth/verify-code', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        accept: 'application/json'
+      },
+      body: JSON.stringify({ email, code })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      setAuthStatus(errorData.message || errorData.error || '驗證失敗', 'error');
+      return;
+    }
+
+    authSession = await response.json();
+    setAuthStatus('驗證完成', 'ok');
+    showReportSection();
+    setIncidentStatus('請在地圖上點選六邊形');
+  } catch {
+    setAuthStatus('驗證失敗', 'error');
+  } finally {
+    authVerifyCode.disabled = false;
+  }
+};
+
+incidentForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  if (reportSection.classList.contains('hidden')) return;
+  if (!selectedHex) {
+    setIncidentStatus('請先點選六邊形', 'error');
+    return;
+  }
+
+  incidentSubmit.disabled = true;
+  setIncidentStatus('送出中');
+
+  try {
+    const response = await fetch('/api/protected/incidents', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        accept: 'application/json'
+      },
+      body: JSON.stringify({
+        hex_id: selectedHex.id,
+        lat: selectedHex.center.lat,
+        lng: selectedHex.center.lng,
+        type: incidentType.value,
+        description: incidentDescription.value.trim()
+      })
+    });
+
+    if (response.status === 401 || response.status === 403) {
+      authSession = null;
+      showAuthSection();
+      setAuthStatus('請先完成 NTU email 驗證', 'error');
+      return;
+    }
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      setIncidentStatus(errorData.message || errorData.error || '送出失敗', 'error');
+      updateIncidentSubmitState();
+      return;
+    }
+
+    const data = await response.json();
+    if (data.incident) {
+      allIncidents.unshift(data.incident);
+      renderIncidentHexes();
+    }
+    closeIncidentDialog();
+  } catch {
+    setIncidentStatus('送出失敗', 'error');
+    updateIncidentSubmitState();
+  }
+});
+
+loadReportHexes().then(() => {
+  if (window.location.hash === '#new-incident') {
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+    beginIncidentFlow();
+  }
+});
+
 // ========== 4) 台大範圍線（常駐，不提供關閉） ==========
-fetch('/ntu_light_map/data/ntu_area.geojson')
+fetch(assetUrl('/data/ntu_area.geojson'))
   .then(r => r.json())
   .then(geo => {
     const ntuLine = L.geoJSON(geo, {
@@ -417,7 +977,7 @@ async function loadJSON(url){
 (async function loadOrderedOverlays(){
 
   // --- (1) 實測亮度六邊形（最上層） ---
-  const geoBrightness = await loadJSON('/ntu_light_map/data/merge_sur_zhoushan.geojson');
+  const geoBrightness = await loadJSON(assetUrl('/data/merge_sur_zhoushan.geojson'));
 
   const rawVals = geoBrightness.features
     .map(f => Number(f.properties?.brightness_filled))
@@ -539,7 +1099,7 @@ async function loadJSON(url){
 
 
   // --- (2) 道路安全框線（中層） ---
-  const geoSafety = await loadJSON('/ntu_light_map/data/hex_hit_with_safe.geojson');
+  const geoSafety = await loadJSON(assetUrl('/data/hex_hit_with_safe.geojson'));
 
   // ===== refreshed safety colors (soft, low-sat) =====
   function safetyColor(s) {
@@ -584,7 +1144,7 @@ async function loadJSON(url){
 
 
   // --- (3) 光害控制區（最下層） ---
-  const geoProtect = await loadJSON('/ntu_light_map/data/protect_square_4326.geojson');
+  const geoProtect = await loadJSON(assetUrl('/data/protect_square_4326.geojson'));
 
   // ===== refreshed protect area (soft lavender) =====
   const protectLayer = L.geoJSON(geoProtect, {
@@ -608,4 +1168,3 @@ async function loadJSON(url){
 </script>
 </body>
 </html>
-```

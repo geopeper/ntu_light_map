@@ -1,0 +1,13 @@
+HASH_SALT=replace-with-a-random-secret
+
+# Production/staging only. Put the real SMTP_PASS in Cloudflare secrets, not in Git.
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_USER=light-map@ntusa.ntu.edu.tw
+SMTP_FROM=light-map@ntusa.ntu.edu.tw
+SMTP_PASS=replace-with-app-password
+
+# Local development only. Do not enable in production.
+ALLOW_DEV_AUTH=true
+DEV_USER_EMAIL=dev@ntu.edu.tw
+DEV_EMAIL_CODE=123456
